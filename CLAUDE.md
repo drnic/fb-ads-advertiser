@@ -29,7 +29,7 @@ DEBUG=1 node bin/fb-ads-advertiser.js "search term"
 
 - **Main CLI script**: `bin/fb-ads-advertiser.js` - Single-file implementation containing all logic
 - **Browser automation**: Uses Playwright with Chromium to interact with Facebook Ads Library
-- **AI integration**: OpenAI GPT-4o-mini selects the most appropriate advertiser from Facebook's suggestions
+- **AI integration**: OpenAI GPT-4o-mini selects the most appropriate advertiser from Facebook's suggestions using verification status, follower counts, and metadata
 
 ### Browser Connection Strategy
 
@@ -43,7 +43,11 @@ The tool uses a dual-connection approach:
 - Supports country selection via `-c/--country` flag, defaults to "All" countries
 - Uses DOM selectors to interact with Facebook's UI (role-based locators for reliability)
 - Implements fallback selector strategies for finding search inputs
-- OpenAI prompt engineering for intelligent advertiser selection from suggestions
+- OpenAI prompt engineering for intelligent advertiser selection with prioritized criteria:
+  - Verified accounts (✓) get highest priority
+  - Higher follower counts indicate official accounts
+  - Position in list (Facebook's relevance ranking)
+  - Appropriate business category matching
 
 ## Environment Requirements
 

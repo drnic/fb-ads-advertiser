@@ -259,43 +259,83 @@ async function main() {
       return;
     }
 
-    // Get suggestion texts for OpenAI to choose from
-    const suggestionTexts = [];
+    // Get suggestion texts with metadata for OpenAI to choose from
+    const suggestionData = [];
     for (const suggestion of suggestions) {
       try {
         // Look for the heading element which contains the advertiser name
         const heading = suggestion.locator('[role="heading"]').first();
         const headingExists = await heading.count() > 0;
         
+        let advertiserName = '';
         if (headingExists) {
           const text = await heading.innerText();
           if (text.trim()) {
-            suggestionTexts.push(text.trim());
-            console.log(`Found advertiser: "${text.trim()}"`);
+            advertiserName = text.trim();
           }
         } else {
           // Fallback to full text if no heading found
           const text = await suggestion.innerText();
           if (text.trim()) {
-            suggestionTexts.push(text.trim());
+            advertiserName = text.trim();
           }
+        }
+        
+        if (advertiserName) {
+          // Extract metadata from the full suggestion text
+          const fullText = await suggestion.innerText();
+          const isVerified = fullText.includes('✓') || await suggestion.locator('svg[aria-label*="Verified"], [data-testid*="verified"]').count() > 0;
+          
+          // Look for follower count patterns (e.g., "801.9K follow this", "70.6K followers")
+          const followerMatch = fullText.match(/(\d+(?:\.\d+)?[KM]?)\s+follow(?:ers?|[^s])/i);
+          const followerCount = followerMatch ? followerMatch[1] : null;
+          
+          // Look for category/type information
+          const categoryMatch = fullText.match(/\s+([A-Za-z\s]+)$/) || fullText.match(/•\s*([^•\n]+)(?:\n|$)/);
+          const category = categoryMatch ? categoryMatch[1].trim() : null;
+          
+          const suggestionInfo = {
+            name: advertiserName,
+            verified: isVerified,
+            followers: followerCount,
+            category: category
+          };
+          
+          suggestionData.push(suggestionInfo);
+          console.log(`Found advertiser: "${advertiserName}"${isVerified ? ' (verified)' : ''}${followerCount ? ` - ${followerCount} followers` : ''}${category ? ` - ${category}` : ''}`);
         }
       } catch (e) {
         // Skip if can't get text
       }
     }
 
-    if (suggestionTexts.length === 0) {
+    if (suggestionData.length === 0) {
       console.log('No valid advertiser suggestions found');
       return;
     }
 
-    console.log(`Found ${suggestionTexts.length} advertiser suggestions`);
+    console.log(`Found ${suggestionData.length} advertiser suggestions`);
 
     // Use OpenAI to select the most appropriate advertiser
-    const prompt = `Given the search term "${searchTerm}" and the following list of Facebook advertiser suggestions, select the most appropriate advertiser business (not just a text match). Return only the exact text of the selected suggestion:
+    const prompt = `Given the search term "${searchTerm}" and the following list of Facebook advertiser suggestions with metadata, select the most appropriate OFFICIAL advertiser business.
 
-${suggestionTexts.map((text, i) => `${i + 1}. ${text}`).join('\n')}`;
+CRITICAL SELECTION CRITERIA (in order of priority):
+1. VERIFIED accounts (marked with ✓) are almost always the official business
+2. HIGH FOLLOWER COUNT indicates legitimacy and official status
+3. POSITION IN LIST - Facebook orders by relevance, so earlier = more official
+4. APPROPRIATE CATEGORY for the business type
+
+Here are the suggestions:
+
+${suggestionData.map((data, i) => {
+  let line = `${i + 1}. ${data.name}`;
+  if (data.verified) line += ' ✓ VERIFIED';
+  if (data.followers) line += ` (${data.followers} followers)`;
+  if (data.category) line += ` - ${data.category}`;
+  return line;
+}).join('\n')}
+
+Return ONLY the exact advertiser name (without metadata) of your selection:`;
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
