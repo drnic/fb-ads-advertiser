@@ -37,13 +37,12 @@ DEBUG=1 node bin/fb-ads-advertiser.js "search term"
 
 ### Browser Connection Strategy
 
-The tool uses a dual-connection approach:
-1. **Primary**: Connects to existing Chrome browser via CDP at `localhost:9222` (preserves existing sessions)
-2. **Fallback**: Launches Chrome with persistent user data directory to maintain login state
+The tool uses a simplified standard Playwright launch approach:
+- Launches Chromium browser directly with Playwright for better reliability and portability
+- Uses headless: false to allow user interaction for authentication if needed
+- Includes `--disable-blink-features=AutomationControlled` flag to avoid detection
 
 ### Key Implementation Details
-
-- Hardcoded Chrome profile path: `/Users/drnic/Library/Application Support/Google/Chrome/Default`
 - Supports country selection via `-c/--country` flag, defaults to "All" countries
 - Uses DOM selectors to interact with Facebook's UI (role-based locators for reliability)
 - Implements fallback selector strategies for finding search inputs

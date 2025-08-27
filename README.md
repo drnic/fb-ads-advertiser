@@ -1,11 +1,10 @@
 # FB Ads Advertiser CLI
 
-A Node.js CLI tool to search Facebook Ads Library for specific advertisers using your existing Chrome browser session and OpenAI for intelligent advertiser selection.
+A Node.js CLI tool to search Facebook Ads Library for specific advertisers using Playwright browser automation and OpenAI for intelligent advertiser selection.
 
 ## Prerequisites
 
 1. **OpenAI API Key**: Set the `OPENAI_API_KEY` environment variable
-2. **Chrome with Remote Debugging**: Start Chrome with remote debugging enabled
 
 ## Setup
 
@@ -19,25 +18,8 @@ npm install
 export OPENAI_API_KEY="your-api-key-here"
 ```
 
-### 3. Chrome Setup (Optional)
-The tool will automatically use your Chrome user data to preserve login sessions. You can optionally start Chrome with remote debugging for better performance:
-
-**macOS:**
-```bash
-/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222
-```
-
-**Windows:**
-```bash
-chrome.exe --remote-debugging-port=9222
-```
-
-**Linux:**
-```bash
-google-chrome --remote-debugging-port=9222
-```
-
-If Chrome remote debugging is not available, the tool will automatically launch Chrome with your user profile.
+### 3. Browser Setup
+The tool will automatically launch Chromium using Playwright. No additional browser setup is required.
 
 ## Usage
 
@@ -71,9 +53,9 @@ node bin/fb-ads-advertiser.js --help
 
 ## How it works
 
-1. Connects to your existing Chrome browser session (preserving login state)
+1. Launches Chromium browser with Playwright
 2. Navigates to Facebook Ads Library
-3. Sets location to Australia and category to "All ads"
+3. Sets location and category to "All ads" (or specified country)
 4. Searches for the provided term
 5. Uses OpenAI GPT-4o-mini to select the most appropriate advertiser from suggestions
 6. Returns the resulting search URL

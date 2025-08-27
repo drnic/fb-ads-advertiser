@@ -83,43 +83,15 @@ async function main() {
 
   let browser;
   try {
-    // Try to connect to existing Chrome browser, if it fails, launch with user data
-    try {
-      browser = await chromium.connectOverCDP('http://localhost:9222');
-      console.log('Connected to existing Chrome browser');
-    } catch (connectError) {
-      console.log('Could not connect to existing Chrome, launching with user data...');
-      // Launch Chrome with user data directory to preserve session
-      browser = await chromium.launchPersistentContext('/Users/drnic/Library/Application Support/Google/Chrome/Default', {
-        headless: false,
-        args: ['--disable-blink-features=AutomationControlled'],
-      });
-    }
+    // Launch Chromium browser with Playwright
+    console.log('Launching Chromium browser...');
+    browser = await chromium.launch({
+      headless: false,
+      args: ['--disable-blink-features=AutomationControlled'],
+    });
     
-    // Get the first page or create a new one
-    let page;
-    if (browser.contexts) {
-      // Connected to existing Chrome browser
-      const contexts = browser.contexts();
-      let context = contexts[0];
-      if (!context) {
-        context = await browser.newContext();
-      }
-      
-      const pages = context.pages();
-      page = pages[0];
-      if (!page) {
-        page = await context.newPage();
-      }
-    } else {
-      // Using persistent context (browser is actually a context)
-      const context = browser;
-      const pages = context.pages();
-      page = pages[0];
-      if (!page) {
-        page = await context.newPage();
-      }
-    }
+    const context = await browser.newContext();
+    const page = await context.newPage();
 
     // Navigate to Facebook Ads Library
     console.log('Navigating to Facebook Ads Library...');
@@ -241,9 +213,9 @@ async function main() {
     await searchInput.focus();
     await page.waitForTimeout(500);
     
-    // Clear any existing text and type the search term
+    // Clear any existing text and fill the search term
     await searchInput.fill('');
-    await searchInput.type(searchTerm);
+    await searchInput.fill(searchTerm);
     await page.waitForTimeout(2000);
 
     // Look for advertiser suggestions - they're in li elements with role="option"
@@ -386,22 +358,13 @@ Return ONLY the exact advertiser name (without metadata) of your selection:`;
     console.log(`Search URL: ${resultUrl}`);
 
   } catch (error) {
-    if (error.message.includes('connect ECONNREFUSED')) {
-      console.error('Error: Could not connect to Chrome browser.');
-      console.error('Please start Chrome with remote debugging enabled:');
-      console.error('  /Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --remote-debugging-port=9222');
-      console.error('  Or on Windows: chrome.exe --remote-debugging-port=9222');
-    } else {
-      console.error('Error:', error.message);
-    }
+    console.error('Error:', error.message);
     process.exit(1);
   } finally {
-    // Close browser if we launched it, but don't close if we connected to existing one
-    if (browser && !browser.contexts) {
-      // This is a persistent context we launched
+    // Close the browser
+    if (browser) {
       await browser.close();
     }
-    // If we connected to existing Chrome, don't close it
   }
 }
 
