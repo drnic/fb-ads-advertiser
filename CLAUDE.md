@@ -9,11 +9,15 @@ This is a Node.js CLI tool that searches Facebook Ads Library for specific adver
 ## Development Commands
 
 ```bash
-# Run the CLI tool
+# Run the CLI tool (defaults to All countries)
 npm run fb-ads-advertiser "search term"
 
-# Direct execution
-node bin/fb-ads-advertiser.js "search term"
+# Direct execution with country selection
+node bin/fb-ads-advertiser.js -c Australia "search term"
+node bin/fb-ads-advertiser.js --country "United States" "search term"
+
+# Show help
+node bin/fb-ads-advertiser.js --help
 
 # Debug mode (saves screenshots)
 DEBUG=1 node bin/fb-ads-advertiser.js "search term"
@@ -36,7 +40,7 @@ The tool uses a dual-connection approach:
 ### Key Implementation Details
 
 - Hardcoded Chrome profile path: `/Users/drnic/Library/Application Support/Google/Chrome/Default`
-- Currently hardcoded to Australia country setting (`AU`)
+- Supports country selection via `-c/--country` flag, defaults to "All" countries
 - Uses DOM selectors to interact with Facebook's UI (role-based locators for reliability)
 - Implements fallback selector strategies for finding search inputs
 - OpenAI prompt engineering for intelligent advertiser selection from suggestions
@@ -49,7 +53,5 @@ The tool uses a dual-connection approach:
 
 ## Current Limitations
 
-- Hardcoded to Australia country code
-- No command-line country selection option
 - Chrome profile path is macOS-specific and hardcoded
 - No test suite implemented

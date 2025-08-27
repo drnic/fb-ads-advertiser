@@ -3,11 +3,72 @@
 const { chromium } = require('playwright');
 const OpenAI = require('openai');
 
+function showHelp() {
+  console.log('Facebook Ads Library Advertiser Search Tool');
+  console.log('');
+  console.log('USAGE:');
+  console.log('  fb-ads-advertiser [OPTIONS] "search term"');
+  console.log('');
+  console.log('OPTIONS:');
+  console.log('  -c, --country COUNTRY    Search within specific country (default: All)');
+  console.log('  -h, --help              Show this help message');
+  console.log('');
+  console.log('EXAMPLES:');
+  console.log('  fb-ads-advertiser "nike"');
+  console.log('  fb-ads-advertiser -c Australia "nike"');
+  console.log('  fb-ads-advertiser --country "United States" "nike"');
+  console.log('');
+  console.log('ENVIRONMENT:');
+  console.log('  OPENAI_API_KEY    Required for AI-powered advertiser selection');
+  console.log('  DEBUG=1           Enable debug mode (saves screenshots)');
+}
+
+function parseArgs() {
+  const args = process.argv.slice(2);
+  const options = {
+    country: 'All',
+    help: false
+  };
+  const positionalArgs = [];
+  
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    
+    if (arg === '-h' || arg === '--help') {
+      options.help = true;
+    } else if (arg === '-c' || arg === '--country') {
+      if (i + 1 >= args.length) {
+        console.error('Error: -c/--country flag requires a value');
+        process.exit(1);
+      }
+      options.country = args[i + 1];
+      i++; // Skip the next argument as it's the country value
+    } else if (arg.startsWith('-')) {
+      console.error(`Error: Unknown option '${arg}'`);
+      console.error('Use --help to see available options');
+      process.exit(1);
+    } else {
+      positionalArgs.push(arg);
+    }
+  }
+  
+  return {
+    searchTerm: positionalArgs[0] || null,
+    ...options
+  };
+}
+
 async function main() {
-  const searchTerm = process.argv[2];
+  const { searchTerm, country, help } = parseArgs();
+  
+  if (help) {
+    showHelp();
+    process.exit(0);
+  }
   
   if (!searchTerm) {
-    console.error('Usage: fb-ads-advertiser "search term"');
+    console.error('Error: Search term is required');
+    console.error('Use --help to see usage information');
     process.exit(1);
   }
 
@@ -73,33 +134,45 @@ async function main() {
       console.log('Debug screenshot saved to debug-facebook-ads.png');
     }
     
-    // Try to set location to Australia and category to "All ads" but don't block if it fails
-    console.log('Setting location to Australia and category to All ads...');
+    // Try to set location and category to "All ads" but don't block if it fails
+    console.log(`Setting location to ${country} and category to All ads...`);
     
-    // Look for country selector and set to Australia (with timeout)
+    // Look for country selector and set to specified country (with timeout)
     try {
       console.log('Looking for country selector...');
       
-      // Try to find the country combobox
-      const countryButton = page.locator('[role="combobox"]:has-text("Australia"), [role="combobox"]:has-text("Country"), button:has-text("Australia")').first();
+      // Find the country combobox - look for role="combobox" that contains country text
+      const countryButton = page.locator('[role="combobox"]').filter({ hasText: /Australia|All|Country|United States|Canada|United Kingdom/ }).first();
       await countryButton.waitFor({ state: 'visible', timeout: 3000 });
       
-      // Check if it already says "Australia" - if so, we're good
+      // Check if it already shows the target country/setting
       const buttonText = await countryButton.innerText();
-      if (buttonText.includes('Australia')) {
-        console.log('Country already set to Australia');
+      const isCorrectSetting = (country === 'All' && buttonText.includes('All')) || 
+                               (country !== 'All' && buttonText.includes(country));
+      
+      if (isCorrectSetting) {
+        console.log(`Country already set to ${country}`);
       } else {
         console.log('Clicking country selector...');
         await countryButton.click();
         await page.waitForTimeout(500);
         
-        const australiaOption = page.locator('[role="option"]:has-text("Australia")').first();
-        await australiaOption.waitFor({ state: 'visible', timeout: 2000 });
-        await australiaOption.click();
-        console.log('Set country to Australia');
+        // Look for the target option in the dropdown
+        let targetOption;
+        if (country === 'All') {
+          // For "All", look for role="gridcell" with "All" text
+          targetOption = page.locator('[role="gridcell"]').filter({ hasText: 'All' }).first();
+        } else {
+          // For specific countries, look for the country name
+          targetOption = page.locator(`[role="gridcell"]:has-text("${country}"), [role="option"]:has-text("${country}")`).first();
+        }
+        
+        await targetOption.waitFor({ state: 'visible', timeout: 3000 });
+        await targetOption.click();
+        console.log(`Set country to ${country}`);
       }
     } catch (e) {
-      console.log('Skipping country selector (may already be set):', e.message);
+      console.log('Could not set country selector:', e.message);
     }
 
     // Click on "Ad category" dropdown and select "All ads"
