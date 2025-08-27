@@ -12,6 +12,10 @@ This is a Node.js CLI tool that searches Facebook Ads Library for specific adver
 # Run the CLI tool (defaults to All countries)
 npm run fb-ads-advertiser "search term"
 
+# Run with country selection through npm (note the -- separator)
+npm run fb-ads-advertiser -- -c Australia "search term"
+npm run fb-ads-advertiser -- --country "United States" "search term"
+
 # Direct execution with country selection
 node bin/fb-ads-advertiser.js -c Australia "search term"
 node bin/fb-ads-advertiser.js --country "United States" "search term"

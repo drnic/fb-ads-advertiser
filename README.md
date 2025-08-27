@@ -43,7 +43,12 @@ If Chrome remote debugging is not available, the tool will automatically launch 
 
 ### Using npm script:
 ```bash
+# Default (All countries)
 npm run fb-ads-advertiser "search term"
+
+# With country selection (note the -- separator)
+npm run fb-ads-advertiser -- -c Australia "search term"
+npm run fb-ads-advertiser -- --country "United States" "search term"
 ```
 
 ### Using npx (if published):
@@ -53,7 +58,15 @@ npx fb-ads-advertiser "search term"
 
 ### Direct execution:
 ```bash
+# Default (All countries)
 node bin/fb-ads-advertiser.js "search term"
+
+# With country selection
+node bin/fb-ads-advertiser.js -c Australia "search term"
+node bin/fb-ads-advertiser.js --country "United States" "search term"
+
+# Show help
+node bin/fb-ads-advertiser.js --help
 ```
 
 ## How it works
@@ -69,7 +82,7 @@ node bin/fb-ads-advertiser.js "search term"
 
 ```bash
 export OPENAI_API_KEY="sk-your-key-here"
-npm run fb-ads-advertiser "Tesla"
+npm run fb-ads-advertiser -- -c Australia "Tesla"
 ```
 
 Output:

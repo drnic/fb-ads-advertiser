@@ -141,8 +141,8 @@ async function main() {
     try {
       console.log('Looking for country selector...');
       
-      // Find the country combobox - look for role="combobox" that contains country text
-      const countryButton = page.locator('[role="combobox"]').filter({ hasText: /Australia|All|Country|United States|Canada|United Kingdom/ }).first();
+      // Find the country combobox - look for any combobox (don't filter by text content)
+      const countryButton = page.locator('[role="combobox"]').first();
       await countryButton.waitFor({ state: 'visible', timeout: 3000 });
       
       // Check if it already shows the target country/setting
