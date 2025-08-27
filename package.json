@@ -1,0 +1,26 @@
+{
+  "name": "fb-ads-advertiser",
+  "version": "1.0.0",
+  "main": "index.js",
+  "bin": {
+    "fb-ads-advertiser": "./bin/fb-ads-advertiser.js"
+  },
+  "scripts": {
+    "fb-ads-advertiser": "node bin/fb-ads-advertiser.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "facebook",
+    "ads",
+    "library",
+    "advertiser",
+    "playwright"
+  ],
+  "author": "",
+  "license": "ISC",
+  "description": "CLI tool to search Facebook Ads Library for specific advertisers",
+  "dependencies": {
+    "openai": "^5.16.0",
+    "playwright": "^1.55.0"
+  }
+}
