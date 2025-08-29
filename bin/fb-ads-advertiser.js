@@ -258,23 +258,44 @@ async function main() {
           const fullText = await suggestion.innerText();
           const isVerified = fullText.includes('✓') || await suggestion.locator('svg[aria-label*="Verified"], [data-testid*="verified"]').count() > 0;
           
-          // Look for follower count patterns (e.g., "801.9K follow this", "70.6K followers")
+          // Look for follower count patterns (e.g., "801.9K follow this", "70.6K followers", "145 followers")
           const followerMatch = fullText.match(/(\d+(?:\.\d+)?[KM]?)\s+follow(?:ers?|[^s])/i);
           const followerCount = followerMatch ? followerMatch[1] : null;
           
-          // Look for category/type information
-          const categoryMatch = fullText.match(/\s+([A-Za-z\s]+)$/) || fullText.match(/•\s*([^•\n]+)(?:\n|$)/);
+          // Look for social media handles (@username patterns)
+          const socialHandleMatches = fullText.match(/@[\w\d_]+/g) || [];
+          const socialHandles = socialHandleMatches.length > 0 ? socialHandleMatches : null;
+          
+          // Look for category/type information (company type, industry)
+          const categoryMatch = fullText.match(/\s+([A-Za-z\s]+company)$/i) || 
+                               fullText.match(/•\s*([^•\n]+)(?:\n|$)/) ||
+                               fullText.match(/\s+-\s+([^-\n]+)$/);
           const category = categoryMatch ? categoryMatch[1].trim() : null;
+          
+          // Look for additional metadata like "Information technology company"
+          const companyTypeMatch = fullText.match(/([A-Za-z\s]+(?:company|business|organization|agency|brand))/i);
+          const companyType = companyTypeMatch ? companyTypeMatch[1].trim() : null;
           
           const suggestionInfo = {
             name: advertiserName,
             verified: isVerified,
             followers: followerCount,
-            category: category
+            category: category,
+            socialHandles: socialHandles,
+            companyType: companyType
           };
           
           suggestionData.push(suggestionInfo);
-          console.log(`Found advertiser: "${advertiserName}"${isVerified ? ' (verified)' : ''}${followerCount ? ` - ${followerCount} followers` : ''}${category ? ` - ${category}` : ''}`);
+          
+          // Enhanced logging with social media handles
+          let logInfo = `Found advertiser: "${advertiserName}"`;
+          if (isVerified) logInfo += ' (verified)';
+          if (followerCount) logInfo += ` - ${followerCount} followers`;
+          if (socialHandles) logInfo += ` - Handles: ${socialHandles.join(', ')}`;
+          if (companyType) logInfo += ` - ${companyType}`;
+          if (category && category !== companyType) logInfo += ` - ${category}`;
+          
+          console.log(logInfo);
         }
       } catch (e) {
         // Skip if can't get text
@@ -293,19 +314,24 @@ async function main() {
 
 CRITICAL SELECTION CRITERIA (in order of priority):
 1. VERIFIED accounts (marked with ✓) are almost always the official business
-2. HIGH FOLLOWER COUNT indicates legitimacy and official status
-3. POSITION IN LIST - Facebook orders by relevance, so earlier = more official
-4. APPROPRIATE CATEGORY for the business type
+2. SOCIAL MEDIA HANDLES that match or relate to the search term indicate authenticity
+3. HIGH FOLLOWER COUNT indicates legitimacy and official status
+4. POSITION IN LIST - Facebook orders by relevance, so earlier = more official
+5. APPROPRIATE COMPANY TYPE and CATEGORY for the business
 
-Here are the suggestions:
+Here are the suggestions with enhanced metadata:
 
 ${suggestionData.map((data, i) => {
   let line = `${i + 1}. ${data.name}`;
   if (data.verified) line += ' ✓ VERIFIED';
   if (data.followers) line += ` (${data.followers} followers)`;
-  if (data.category) line += ` - ${data.category}`;
+  if (data.socialHandles) line += ` | Social: ${data.socialHandles.join(', ')}`;
+  if (data.companyType) line += ` | Type: ${data.companyType}`;
+  if (data.category && data.category !== data.companyType) line += ` | Category: ${data.category}`;
   return line;
 }).join('\n')}
+
+IMPORTANT: Social media handles (like @username) can help identify the correct official account by matching naming patterns with the search term.
 
 Return ONLY the exact advertiser name (without metadata) of your selection:`;
 
