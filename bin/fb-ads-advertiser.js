@@ -331,14 +331,16 @@ ${suggestionData.map((data, i) => {
   return line;
 }).join('\n')}
 
-IMPORTANT: Social media handles (like @username) can help identify the correct official account by matching naming patterns with the search term.
+IMPORTANT: 
+- Social media handles (like @username) can help identify the correct official account by matching naming patterns with the search term.
+- Return the EXACT COMPANY/ADVERTISER NAME as it appears in the numbered list above (e.g., "Frontdesk", not "@myaifrontdesk" or "${searchTerm}")
+- Do NOT return social media handles, search terms, or metadata - only the actual business name
 
-Return ONLY the exact advertiser name (without metadata) of your selection:`;
+Return ONLY the exact advertiser name from the numbered list:`;
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-5-mini',
       messages: [{ role: 'user', content: prompt }],
-      temperature: 0.1,
     });
 
     const selectedAdvertiser = completion.choices[0].message.content.trim();
@@ -348,7 +350,8 @@ Return ONLY the exact advertiser name (without metadata) of your selection:`;
     let found = false;
     for (const suggestion of suggestions) {
       try {
-        // Check if this suggestion's heading matches the selected advertiser
+        // Check if this suggestion matches the selected advertiser
+        const fullText = await suggestion.innerText();
         const heading = suggestion.locator('[role="heading"]').first();
         const headingExists = await heading.count() > 0;
         
@@ -356,11 +359,18 @@ Return ONLY the exact advertiser name (without metadata) of your selection:`;
         if (headingExists) {
           matchText = await heading.innerText();
         } else {
-          matchText = await suggestion.innerText();
+          matchText = fullText;
         }
         
-        if (matchText.trim() === selectedAdvertiser) {
-          console.log(`Clicking on advertiser: "${matchText.trim()}"`);
+        // Try exact match first, then case-insensitive match
+        const isExactMatch = matchText.trim() === selectedAdvertiser;
+        const isHeadingMatch = headingExists && matchText.trim().toLowerCase() === selectedAdvertiser.toLowerCase();
+        
+        // For fallback, check if the heading/main text starts with the selected advertiser
+        const startsWithMatch = matchText.trim().toLowerCase().startsWith(selectedAdvertiser.toLowerCase());
+        
+        if (isExactMatch || isHeadingMatch || startsWithMatch) {
+          console.log(`Clicking on advertiser: "${matchText.trim()}" (full text: "${fullText.replace(/\n/g, ' ').trim()}")`);
           await suggestion.click();
           found = true;
           break;
